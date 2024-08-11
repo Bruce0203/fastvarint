@@ -1,0 +1,14 @@
+[package]
+name = "fastvarint"
+version = "0.1.0"
+edition = "2021"
+author = "Bruce0203 <brucefreedy@gmail.com>"
+description = "fast varint encode/decode that supports wide compatibility"
+repository = "https://github.com/Bruce0203/fastvarint"
+license = "MIT"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
+
+[dependencies]
