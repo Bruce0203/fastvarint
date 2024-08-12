@@ -1,79 +1,61 @@
+use fastbuf::{ReadBuf, WriteBuf};
+
 pub trait VarInt: Sized {
-    const MAX_VAR_INT_SPACE: usize;
+    fn encode_var(&self, buf: &mut impl WriteBuf) -> Result<(), ()>;
 
-    fn encode_var<F>(&self, f: F) -> Result<(), ()>
-    where
-        F: FnMut(u8) -> Result<(), ()>;
-
-    fn decode_var<F>(f: F) -> Result<(Self, usize), ()>
-    where
-        F: FnMut(usize) -> Result<u8, ()>;
+    fn decode_var(buf: &mut impl ReadBuf) -> Result<Self, ()>;
 }
 
-const MSB: u8 = 0b1000_0000;
-const DROP_MSB: u8 = 0b0111_1111;
-
 impl VarInt for i32 {
-    const MAX_VAR_INT_SPACE: usize = u32::MAX_VAR_INT_SPACE;
-
-    fn encode_var<F>(&self, f: F) -> Result<(), ()>
-    where
-        F: FnMut(u8) -> Result<(), ()>,
-    {
-        (*self as u32).encode_var(f)
+    fn encode_var(&self, buf: &mut impl WriteBuf) -> Result<(), ()> {
+        (*self as u32).encode_var(buf)
     }
 
-    fn decode_var<F>(f: F) -> Result<(Self, usize), ()>
-    where
-        F: FnMut(usize) -> Result<u8, ()>,
-    {
-        let (data, read_length) = u32::decode_var(f)?;
-        Ok((data as i32, read_length))
+    fn decode_var(buf: &mut impl ReadBuf) -> Result<Self, ()> {
+        Ok(u32::decode_var(buf)? as i32)
     }
 }
 
 impl VarInt for u32 {
-    const MAX_VAR_INT_SPACE: usize = 5;
+    fn encode_var(&self, buf: &mut impl WriteBuf) -> Result<(), ()> {
+        let x = *self as u64;
+        let stage1 = (x & 0x000000000000007f)
+            | ((x & 0x0000000000003f80) << 1)
+            | ((x & 0x00000000001fc000) << 2)
+            | ((x & 0x000000000fe00000) << 3)
+            | ((x & 0x00000000f0000000) << 4);
 
-    fn encode_var<F>(&self, mut f: F) -> Result<(), ()>
-    where
-        F: FnMut(u8) -> Result<(), ()>,
-    {
-        let mut n = *self as u64;
-        while n >= 0x80 {
-            f(MSB | (n as u8))?;
-            n >>= 7;
-        }
-        f(n as u8)?;
+        let leading = stage1.leading_zeros();
+
+        let unused_bytes = (leading - 1) >> 3;
+        let bytes_needed = 8 - unused_bytes;
+
+        // set all but the last MSBs
+        let msbs = 0x8080808080808080;
+        let msbmask = 0xffffffffffffffff >> (((8 - bytes_needed + 1) << 3) - 1);
+
+        let merged = stage1 | (msbs & msbmask);
+        let bytes = merged.to_le_bytes();
+
+        buf.try_write(unsafe { bytes.get_unchecked(..bytes_needed as usize) })?;
         Ok(())
     }
 
-    fn decode_var<F>(mut f: F) -> Result<(Self, usize), ()>
-    where
-        F: FnMut(usize) -> Result<u8, ()>,
-    {
-        let mut result: u64 = 0;
-        let mut shift = 0;
-
-        let mut success = false;
-        let mut i = 0;
-        while i < Self::MAX_VAR_INT_SPACE {
-            let b = f(i)?;
-            i += 1;
-            let msb_dropped = b & DROP_MSB;
-            result |= (msb_dropped as u64) << shift;
-            shift += 7;
-
-            if b & MSB == 0 || shift > (9 * 7) {
-                success = b & MSB == 0;
-                break;
+    fn decode_var(buf: &mut impl ReadBuf) -> Result<Self, ()> {
+        let bytes = buf.get_continuous(u32::BITS as usize / 8 + 1);
+        let remaining = buf.remaining();
+        let mut val = 0;
+        for i in 0..5 {
+            if remaining < i + 1 {
+                Err(())?
+            }
+            let byte = *unsafe { bytes.get_unchecked(i) };
+            val |= (byte as i32 & 0b01111111) << (i * 7);
+            if byte & 0b10000000 == 0 {
+                buf.advance(i + 1);
+                return Ok(val as u32);
             }
         }
-
-        if success {
-            Ok((result as u32, i /*shift / 7*/))
-        } else {
-            Err(())
-        }
+        Err(())
     }
 }

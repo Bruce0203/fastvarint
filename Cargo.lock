@@ -3,5 +3,23 @@
 version = 3
 
 [[package]]
+name = "fastbuf"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a7695868dcf29f5735153770a988c7ded827a1595943e89038c025b497342a3"
+dependencies = [
+ "varuint",
+]
+
+[[package]]
 name = "fastvarint"
-version = "0.2.0"
+version = "0.3.0"
+dependencies = [
+ "fastbuf",
+]
+
+[[package]]
+name = "varuint"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa87b6bf001aaee248041a8fd176b6ed105b5ff78a8d13b4aa2f644660b3031d"
