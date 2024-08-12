@@ -13,6 +13,25 @@ pub trait VarInt: Sized {
 const MSB: u8 = 0b1000_0000;
 const DROP_MSB: u8 = 0b0111_1111;
 
+impl VarInt for i32 {
+    const MAX_VAR_INT_SPACE: usize = u32::MAX_VAR_INT_SPACE;
+
+    fn encode_var<F>(&self, f: F) -> Result<(), ()>
+    where
+        F: FnMut(u8) -> Result<(), ()>,
+    {
+        (*self as u32).encode_var(f)
+    }
+
+    fn decode_var<F>(f: F) -> Result<(Self, usize), ()>
+    where
+        F: FnMut(usize) -> Result<u8, ()>,
+    {
+        let (data, read_length) = u32::decode_var(f)?;
+        Ok((data as i32, read_length))
+    }
+}
+
 impl VarInt for u32 {
     const MAX_VAR_INT_SPACE: usize = 5;
 
