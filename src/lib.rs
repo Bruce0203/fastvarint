@@ -3,7 +3,9 @@ use fastbuf::{ReadBuf, WriteBuf};
 pub trait VarInt: Sized {
     fn encode_var(&self, buf: &mut impl WriteBuf) -> Result<(), ()>;
 
-    fn decode_var(buf: &mut impl ReadBuf) -> Result<(Self, usize), ()>;
+    fn decode_var_from_buf(buf: &impl ReadBuf) -> Result<(Self, usize), ()>;
+
+    fn decode_var(buf: &[u8]) -> Result<(Self, usize), ()>;
 }
 
 impl VarInt for i32 {
@@ -11,7 +13,12 @@ impl VarInt for i32 {
         (*self as u32).encode_var(buf)
     }
 
-    fn decode_var(buf: &mut impl ReadBuf) -> Result<(Self, usize), ()> {
+    fn decode_var_from_buf(buf: &impl ReadBuf) -> Result<(Self, usize), ()> {
+        let (data, read_length) = u32::decode_var_from_buf(buf)?;
+        Ok((data as i32, read_length))
+    }
+
+    fn decode_var(buf: &[u8]) -> Result<(Self, usize), ()> {
         let (data, read_length) = u32::decode_var(buf)?;
         Ok((data as i32, read_length))
     }
@@ -42,15 +49,18 @@ impl VarInt for u32 {
         Ok(())
     }
 
-    fn decode_var(buf: &mut impl ReadBuf) -> Result<(Self, usize), ()> {
+    fn decode_var_from_buf(buf: &impl ReadBuf) -> Result<(Self, usize), ()> {
         let bytes = buf.get_continuous(u32::BITS as usize / 8 + 1);
-        let remaining = buf.remaining();
+        Self::decode_var(bytes)
+    }
+
+    fn decode_var(buf: &[u8]) -> Result<(Self, usize), ()> {
         let mut val = 0;
         for i in 0..5 {
-            if remaining < i + 1 {
+            if buf.len() < i + 1 {
                 Err(())?
             }
-            let byte = *unsafe { bytes.get_unchecked(i) };
+            let byte = *unsafe { buf.get_unchecked(i) };
             val |= (byte as i32 & 0b01111111) << (i * 7);
             if byte & 0b10000000 == 0 {
                 return Ok((val as u32, i + 1));
