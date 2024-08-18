@@ -4,16 +4,16 @@ version = 3
 
 [[package]]
 name = "fastbuf"
-version = "0.23.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db49844afa6d995e8faf4ee6ebe730c495587e581d6aa16e149b5207beed9857"
+checksum = "4d9ead7a585cdef0d3ff8b1c28e63b1c3aff45aa71fe28a8e920304398ec6ffc"
 dependencies = [
  "varuint",
 ]
 
 [[package]]
 name = "fastvarint"
-version = "0.7.0"
+version = "0.10.0"
 dependencies = [
  "fastbuf",
 ]
