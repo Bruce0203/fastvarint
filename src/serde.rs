@@ -23,7 +23,7 @@ where
     deserializer.deserialize_seq(VarIntVisitor(PhantomData))
 }
 
-struct VarIntVisitor<T: DecodeVarInt>(PhantomData<T>);
+pub struct VarIntVisitor<T: DecodeVarInt>(PhantomData<T>);
 
 impl<'de, T: DecodeVarInt> Visitor<'de> for VarIntVisitor<T> {
     type Value = T;
