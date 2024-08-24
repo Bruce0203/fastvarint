@@ -1,6 +1,6 @@
 [package]
 name = "fastvarint"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 author = "Bruce0203 <brucefreedy@gmail.com>"
 description = "fast varint encode/decode that supports wide compatibility"
@@ -12,4 +12,7 @@ include = [
 ]
 
 [dependencies]
-fastbuf = "0.25.0"
+serde = "1.0.209"
+
+[features]
+serde = ["dep:serde"]
