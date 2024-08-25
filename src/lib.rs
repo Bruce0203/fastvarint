@@ -1,7 +1,11 @@
-pub mod impls;
+mod impls;
 pub use impls::*;
 
+mod varint;
+pub use varint::*;
+
 #[cfg(feature = "serde")]
-pub mod serde;
+mod serde;
+
 #[cfg(feature = "serde")]
 pub use serde::*;

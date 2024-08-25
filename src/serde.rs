@@ -2,10 +2,13 @@ use std::marker::PhantomData;
 
 use serde::{
     de::{Error, SeqAccess, Visitor},
-    Serializer,
+    Deserialize, Serialize, Serializer,
 };
 
-use crate::impls::{DecodeVarInt, DecodeVarIntError, EncodeVarInt};
+use crate::{
+    impls::{DecodeVarInt, DecodeVarIntError, EncodeVarInt},
+    VarInt,
+};
 
 pub fn serialize<T, S>(t: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -45,5 +48,23 @@ impl<'de, T: DecodeVarInt> Visitor<'de> for VarIntVisitor<T> {
                 return Err(err);
             }
         }
+    }
+}
+
+impl Serialize for VarInt {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serialize(&**self, serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for VarInt {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserialize(deserializer)
     }
 }

@@ -1,10 +1,12 @@
+use num_traits::AsPrimitive;
+
 pub trait EncodeVarInt {
     fn encode_var_int<F: FnOnce(&[u8]) -> R, R>(&self, write: F) -> R;
 }
 
-impl<T: Into<u64> + Copy> EncodeVarInt for T {
+impl<T: AsPrimitive<u64> + Copy> EncodeVarInt for T {
     fn encode_var_int<F: FnOnce(&[u8]) -> R, R>(&self, write: F) -> R {
-        let x: u64 = (*self).into();
+        let x: u64 = (*self).as_();
         let stage1 = (x & 0x000000000000007f)
             | ((x & 0x0000000000003f80) << 1)
             | ((x & 0x00000000001fc000) << 2)
@@ -56,5 +58,67 @@ impl<T: From<i32>> DecodeVarInt for T {
             }
         }
         Err(DecodeVarIntError::TooLarge)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn verify_encode_var_int<T: EncodeVarInt + AsPrimitive<u64> + Copy>(value: T, expected: &[u8]) {
+        let mut encoded = Vec::new();
+        value.encode_var_int(|bytes| {
+            encoded.extend_from_slice(bytes);
+        });
+        assert_eq!(encoded, expected);
+    }
+
+    fn verify_decode_var_int<T: DecodeVarInt + PartialEq + std::fmt::Debug>(
+        expected: T,
+        bytes: &[u8],
+    ) {
+        let mut i = 0;
+        let result: Result<T, DecodeVarIntError<()>> = T::decode_var_int(|_| {
+            if i < bytes.len() {
+                let byte = bytes[i];
+                i += 1;
+                Ok(Some(byte))
+            } else {
+                Ok(None)
+            }
+        });
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_encode_var_int() {
+        // Encoding tests
+        verify_encode_var_int(0, &[0x00]);
+        verify_encode_var_int(1, &[0x01]);
+        verify_encode_var_int(2, &[0x02]);
+        verify_encode_var_int(127, &[0x7f]);
+        verify_encode_var_int(128, &[0x80, 0x01]);
+        verify_encode_var_int(255, &[0xff, 0x01]);
+        verify_encode_var_int(25565, &[0xdd, 0xc7, 0x01]);
+        verify_encode_var_int(2097151, &[0xff, 0xff, 0x7f]);
+        verify_encode_var_int(2147483647, &[0xff, 0xff, 0xff, 0xff, 0x07]);
+        verify_encode_var_int(-1, &[0xff, 0xff, 0xff, 0xff, 0x0f]);
+        verify_encode_var_int(-2147483648, &[0x80, 0x80, 0x80, 0x80, 0x08]);
+    }
+
+    #[test]
+    fn test_decode_var_int() {
+        // Decoding tests
+        verify_decode_var_int(0, &[0x00]);
+        verify_decode_var_int(1, &[0x01]);
+        verify_decode_var_int(2, &[0x02]);
+        verify_decode_var_int(127, &[0x7f]);
+        verify_decode_var_int(128, &[0x80, 0x01]);
+        verify_decode_var_int(255, &[0xff, 0x01]);
+        verify_decode_var_int(25565, &[0xdd, 0xc7, 0x01]);
+        verify_decode_var_int(2097151, &[0xff, 0xff, 0x7f]);
+        verify_decode_var_int(2147483647, &[0xff, 0xff, 0xff, 0xff, 0x07]);
+        verify_decode_var_int(-1, &[0xff, 0xff, 0xff, 0xff, 0x0f]);
+        verify_decode_var_int(-2147483648, &[0x80, 0x80, 0x80, 0x80, 0x08]);
     }
 }
