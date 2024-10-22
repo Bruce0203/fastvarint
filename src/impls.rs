@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use num_traits::AsPrimitive;
 
 use crate::{DecodeVarInt, EncodeVarInt};
@@ -29,14 +31,14 @@ impl<T: AsPrimitive<u64> + Copy> EncodeVarInt for T {
 }
 
 #[derive(Debug)]
-pub enum DecodeVarIntError<T> {
+pub enum DecodeVarIntError<T: Display> {
     NotEnoughBytesInTheBuffer,
     TooLarge,
     Custom(T),
 }
 
 impl<T: From<i32>> DecodeVarInt for T {
-    fn decode_var_int<F: FnMut(usize) -> Result<Option<u8>, E>, E>(
+    fn decode_var_int<F: FnMut(usize) -> Result<Option<u8>, E>, E: Display>(
         mut reader: F,
     ) -> Result<Self, DecodeVarIntError<E>> {
         let mut val = 0;

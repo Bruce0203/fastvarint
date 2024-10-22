@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use num_traits::AsPrimitive;
 
 use crate::{DecodeVarInt, DecodeVarIntError, EncodeVarInt};
@@ -12,7 +14,7 @@ fn verify_encode_var_int<T: EncodeVarInt + AsPrimitive<u64> + Copy>(value: T, ex
 
 fn verify_decode_var_int<T: DecodeVarInt + PartialEq + std::fmt::Debug>(expected: T, bytes: &[u8]) {
     let mut i = 0;
-    let result: Result<T, DecodeVarIntError<()>> = T::decode_var_int(|_| {
+    let result: Result<T, DecodeVarIntError<Infallible>> = T::decode_var_int(|_| {
         if i < bytes.len() {
             let byte = bytes[i];
             i += 1;
