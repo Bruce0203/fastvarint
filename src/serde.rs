@@ -1,20 +1,8 @@
 use std::{convert::Infallible, marker::PhantomData, usize};
 
-use serde::{
-    de::{Unexpected, Visitor},
-    Deserialize, Serialize,
-};
+use serde::de::{Unexpected, Visitor};
 
-use crate::{DecodeVarInt, DecodeVarIntError, EncodeVarInt, VarInt};
-
-impl Serialize for VarInt {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serialize(&**self, serializer)
-    }
-}
+use crate::{DecodeVarInt, DecodeVarIntError, EncodeVarInt};
 
 pub fn serialize<T: EncodeVarInt, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -23,16 +11,7 @@ where
     value.encode_var_int(|bytes| serializer.serialize_bytes(bytes))
 }
 
-impl<'de> Deserialize<'de> for VarInt {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserialize(deserializer)
-    }
-}
-
-fn deserialize<'de, T: DecodeVarInt, D>(deserializer: D) -> Result<T, D::Error>
+pub fn deserialize<'de, T: DecodeVarInt, D>(deserializer: D) -> Result<T, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

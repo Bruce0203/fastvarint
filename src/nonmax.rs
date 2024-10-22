@@ -26,3 +26,23 @@ impl EncodeVarInt for NonMaxI32VarInt {
         self.0.get().encode_var_int(write)
     }
 }
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for NonMaxI32VarInt {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        crate::serialize(&self.0.get(), serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for NonMaxI32VarInt {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        crate::deserialize(deserializer)
+    }
+}
