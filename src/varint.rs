@@ -1,7 +1,9 @@
-use derive_more::derive::{Deref, DerefMut};
+use derive_more::derive::{Deref, DerefMut, Display, Into};
 use num_traits::AsPrimitive;
 
-#[derive(Deref, DerefMut)]
+#[derive(
+    Default, Debug, Display, Into, Deref, DerefMut, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct VarInt(i32);
 
 impl VarInt {
