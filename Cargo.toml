@@ -12,6 +12,12 @@ include = [
 ]
 
 [dependencies]
-derive_more = { version = "1.0.0", features = ["deref", "deref_mut"] }
+derive_more = { version = "1.0.0", features = ["deref", "deref_mut", "display", "into"] }
+nonmax = { version = "0.5.5", optional = true }
 num-traits = "0.2.19"
+serde = { version = "1.0.210", optional = true }
 
+[features]
+default = ["nonmax", "serde"]
+serde = ["dep:serde", "nonmax/serde"]
+nonmax = ["dep:nonmax"]
