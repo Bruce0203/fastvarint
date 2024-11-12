@@ -31,8 +31,8 @@ impl<'de, T: DecodeVarInt> Visitor<'de> for VarIntVisitor<T> {
     where
         E: serde::de::Error,
     {
-        T::decode_var_int(|i| -> Result<_, Infallible> { Ok(v.get(i).copied()) }).map_err(|err| {
-            match err {
+        T::decode_var_int(|i| -> Result<_, Infallible> { Ok(v.get(i).copied()) })
+            .map_err(|err| match err {
                 DecodeVarIntError::NotEnoughBytesInTheBuffer => {
                     E::invalid_length(usize::MAX, &"NotEnoughBytesInTheBuffer")
                 }
@@ -40,7 +40,7 @@ impl<'de, T: DecodeVarInt> Visitor<'de> for VarIntVisitor<T> {
                     E::invalid_value(Unexpected::Unsigned(1), &"TooLarge")
                 }
                 DecodeVarIntError::Custom(_) => E::custom(""),
-            }
-        })
+            })
+            .map(|v| v.0)
     }
 }

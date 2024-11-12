@@ -40,7 +40,7 @@ pub enum DecodeVarIntError<T: Display> {
 impl<T: From<i32>> DecodeVarInt for T {
     fn decode_var_int<F: FnMut(usize) -> Result<Option<u8>, E>, E: Display>(
         mut reader: F,
-    ) -> Result<Self, DecodeVarIntError<E>> {
+    ) -> Result<(Self, usize), DecodeVarIntError<E>> {
         let mut val = 0;
         for i in 0..5 as usize {
             let byte: u8 = reader(i)
@@ -48,7 +48,7 @@ impl<T: From<i32>> DecodeVarInt for T {
                 .ok_or_else(|| DecodeVarIntError::NotEnoughBytesInTheBuffer)?;
             val |= (byte as i32 & 0b01111111) << (i * 7);
             if byte & 0b10000000 == 0 {
-                return Ok(T::from(val));
+                return Ok((T::from(val), i));
             }
         }
         Err(DecodeVarIntError::TooLarge)

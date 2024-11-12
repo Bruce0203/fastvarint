@@ -9,5 +9,5 @@ pub trait EncodeVarInt {
 pub trait DecodeVarInt: Sized {
     fn decode_var_int<F: FnMut(usize) -> Result<Option<u8>, E>, E: Display>(
         reader: F,
-    ) -> Result<Self, DecodeVarIntError<E>>;
+    ) -> Result<(Self, usize), DecodeVarIntError<E>>;
 }
