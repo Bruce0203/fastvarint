@@ -7,10 +7,10 @@ use crate::EncodeVarInt;
 #[derive(
     Default, Debug, Display, Into, Deref, DerefMut, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
 )]
-pub struct NonMaxI32VarInt(NonMaxI32);
+pub struct NonMaxI32VarInt(pub NonMaxI32);
 
 impl NonMaxI32VarInt {
-    pub fn new(value: i32) -> Self {
+    pub const fn new(value: i32) -> Self {
         Self(unsafe { NonMaxI32::new_unchecked(value) })
     }
 }
@@ -34,15 +34,5 @@ impl serde::Serialize for NonMaxI32VarInt {
         S: serde::Serializer,
     {
         crate::serialize(&self.0.get(), serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for NonMaxI32VarInt {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        crate::deserialize(deserializer)
     }
 }
